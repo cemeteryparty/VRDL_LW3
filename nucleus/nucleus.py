@@ -63,7 +63,7 @@ DEFAULT_LOGS_DIR = os.path.join(ROOT_DIR, "logs")
 # Results directory
 # Save submission files here
 RESULTS_DIR = os.path.join(ROOT_DIR, "results/nucleus/")
-
+VAL_IMAGE_IDS = []
 ############################################################
 #  Configurations
 ############################################################

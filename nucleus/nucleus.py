@@ -38,23 +38,21 @@ if __name__ == '__main__':
 import os
 import sys
 import json
+import math
 import datetime
-import numpy as np
 import skimage.io
+import numpy as np
 from imgaug import augmenters as iaa
 
 # Root directory of the project
 ROOT_DIR = "./"# os.path.abspath("../../")
 
 # Import Mask RCNN
-sys.path.append(ROOT_DIR)  # To find local version of the library
+#sys.path.append(ROOT_DIR)  # To find local version of the library
 from mrcnn.config import Config
 from mrcnn import utils
 from mrcnn import model as modellib
 from mrcnn import visualize
-
-# Path to trained weights file
-#COCO_WEIGHTS_PATH = os.path.join(ROOT_DIR, "mask_rcnn_coco.h5")
 
 # Directory to save logs and model checkpoints, if not provided
 # through the command line argument --logs
@@ -62,8 +60,10 @@ DEFAULT_LOGS_DIR = os.path.join(ROOT_DIR, "logs")
 
 # Results directory
 # Save submission files here
-RESULTS_DIR = os.path.join(ROOT_DIR, "results/nucleus/")
+RESULTS_DIR = os.path.join(ROOT_DIR, "results")
+TRA_IMAGE_IDS = []
 VAL_IMAGE_IDS = []
+
 ############################################################
 #  Configurations
 ############################################################
@@ -80,8 +80,8 @@ class NucleusConfig(Config):
     NUM_CLASSES = 1 + 1  # Background + nucleus
 
     # Number of training and validation steps per epoch
-    STEPS_PER_EPOCH = (657 - len(VAL_IMAGE_IDS)) // IMAGES_PER_GPU
-    VALIDATION_STEPS = max(1, len(VAL_IMAGE_IDS) // IMAGES_PER_GPU)
+    # STEPS_PER_EPOCH  = __init__
+    # VALIDATION_STEPS = __init__
 
     # Don't exclude based on confidence. Since we have two classes
     # then 0.5 is the minimum anyway as it picks between nucleus and BG
@@ -133,6 +133,13 @@ class NucleusConfig(Config):
     # Max number of final detections per image
     DETECTION_MAX_INSTANCES = 400
 
+    def __init__(self, n_images, n_val_images):
+        super(NucleusConfig, self).__init__()
+        self.STEPS_PER_EPOCH = math.ceil(
+            (n_images - n_val_images) / self.IMAGES_PER_GPU
+        )
+        self.VALIDATION_STEPS = max(1, math.ceil(n_val_images / self.IMAGES_PER_GPU))
+
 
 class NucleusInferenceConfig(NucleusConfig):
     # Set batch size to 1 to run one image at a time
@@ -151,7 +158,7 @@ class NucleusInferenceConfig(NucleusConfig):
 
 class NucleusDataset(utils.Dataset):
 
-    def load_nucleus(self, dataset_dir, subset):
+    def load_nucleus(self, dataset_dir, subset, selects=None):
         """Load a subset of the nuclei dataset.
 
         dataset_dir: Root directory of the dataset
@@ -165,31 +172,24 @@ class NucleusDataset(utils.Dataset):
         self.add_class("nucleus", 1, "nucleus")
 
         # Which subset?
-        # "val": use hard-coded list above
-        # "train": use data from stage1_train minus the hard-coded list above
-        # else: use the data from the specified sub-directory
-        ##assert subset in ["train", "val", "stage1_train", "stage1_test", "stage2_test"]
-        ##subset_dir = "stage1_train" if subset in ["train", "val"] else subset
         dataset_dir = os.path.join(dataset_dir, subset)
         print("Processing Dir: {}".format(dataset_dir))
-        if subset == "val":
-            image_ids = VAL_IMAGE_IDS
+        if selects is None:
+            image_ids = os.listdir(dataset_dir)
         else:
-            # Get image ids from directory names
-            image_ids = next(os.walk(dataset_dir))[1]
-            if subset == "train":
-                image_ids = list(set(image_ids) - set(VAL_IMAGE_IDS))
+            image_ids = selects
+        print(f"image_ids-{subset}: {image_ids}")
 
         # Add images
         for image_id in image_ids:
-            self.add_image(
-                "nucleus",
-                image_id=image_id,
-                path=os.path.join(dataset_dir, image_id, "images/{}.png".format(image_id)))
+            image_path = os.path.join(dataset_dir, image_id, "images/{}.png".format(image_id))
+            if not os.path.exists(image_path):
+                raise FileNotFoundError("No such file: {}".format(image_path))
+            self.add_image("nucleus", image_id=image_id, path=image_path)
 
     def load_mask(self, image_id):
         """Generate instance masks for an image.
-       Returns:
+        Returns:
         masks: A bool array of shape [height, width, instance count] with
             one mask per instance.
         class_ids: a 1D array of class IDs of the instance masks.
@@ -203,7 +203,7 @@ class NucleusDataset(utils.Dataset):
         mask = []
         for f in next(os.walk(mask_dir))[2]:
             if f.endswith(".png"):
-                m = skimage.io.imread(os.path.join(mask_dir, f)).astype(np.bool)
+                m = skimage.io.imread(os.path.join(mask_dir, f)).astype(np.bool_)  # np.bool
                 mask.append(m)
         mask = np.stack(mask, axis=-1)
         # Return mask, and array of class IDs of each instance. Since we have
@@ -227,25 +227,23 @@ def train(model, dataset_dir, subset):
     """Train the model."""
     # Training dataset.
     dataset_train = NucleusDataset()
-    dataset_train.load_nucleus(dataset_dir, subset)
+    dataset_train.load_nucleus(dataset_dir, subset, selects=TRA_IMAGE_IDS)
     dataset_train.prepare()
 
     # Validation dataset
     dataset_val = NucleusDataset()
-    dataset_val.load_nucleus(dataset_dir, "val")
+    dataset_val.load_nucleus(dataset_dir, subset, selects=VAL_IMAGE_IDS)
     dataset_val.prepare()
 
     # Image augmentation
     # http://imgaug.readthedocs.io/en/latest/source/augmenters.html
-    augmentation = iaa.SomeOf((0, 2), [
-        iaa.Fliplr(0.5),
-        iaa.Flipud(0.5),
-        iaa.OneOf([iaa.Affine(rotate=90),
-                   iaa.Affine(rotate=180),
-                   iaa.Affine(rotate=270)]),
-        iaa.Multiply((0.8, 1.5)),
-        iaa.GaussianBlur(sigma=(0.0, 5.0))
-    ])
+    augmentation = iaa.SomeOf(
+        (0, 2), [
+            iaa.Fliplr(0.5), iaa.Flipud(0.5),
+            iaa.OneOf([iaa.Affine(rotate=90), iaa.Affine(rotate=180), iaa.Affine(rotate=270)]),
+            iaa.Multiply((0.8, 1.5)), iaa.GaussianBlur(sigma=(0.0, 5.0))
+        ]
+    )
 
     # *** This training schedule is an example. Update to your needs ***
 
@@ -414,26 +412,25 @@ if __name__ == '__main__':
 
     # Configurations
     if args.command == "train":
-        config = NucleusConfig()
+        fnames = os.listdir(os.path.join(args.dataset, args.subset))
+        from sklearn.model_selection import train_test_split
+        TRA_IMAGE_IDS, VAL_IMAGE_IDS = train_test_split(fnames, test_size=1/6)
+        config = NucleusConfig(len(fnames), len(VAL_IMAGE_IDS))
     else:
         config = NucleusInferenceConfig()
-    config.display()
+    # config.display("logs/config.log")
+    config.display(os.path.join(args.logs, "nucleus.conf"))
 
     # Create model
     if args.command == "train":
         model = modellib.MaskRCNN(mode="training", config=config,
-                                  model_dir=args.logs)
+            model_dir=args.logs)
     else:
         model = modellib.MaskRCNN(mode="inference", config=config,
-                                  model_dir=args.logs)
+            model_dir=args.logs)
 
     # Select weights file to load
-    if args.weights.lower() == "coco":
-        weights_path = COCO_WEIGHTS_PATH
-        # Download weights file
-        if not os.path.exists(weights_path):
-            utils.download_trained_weights(weights_path)
-    elif args.weights.lower() == "last":
+    if args.weights.lower() == "last":
         # Find last trained weights
         weights_path = model.find_last()
     elif args.weights.lower() == "imagenet":
@@ -444,15 +441,9 @@ if __name__ == '__main__':
 
     # Load weights
     print("Loading weights ", weights_path)
-    if args.weights.lower() == "coco":
-        # Exclude the last layers because they require a matching
-        # number of classes
-        model.load_weights(weights_path, by_name=True, exclude=[
-            "mrcnn_class_logits", "mrcnn_bbox_fc",
-            "mrcnn_bbox", "mrcnn_mask"])
-    else:
-        model.load_weights(weights_path, by_name=True)
+    model.load_weights(weights_path, by_name=True)
 
+    raise Exception("C: Checkpoint before training")
     # Train or evaluate
     if args.command == "train":
         train(model, args.dataset, args.subset)

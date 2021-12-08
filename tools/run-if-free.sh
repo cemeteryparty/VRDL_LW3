@@ -17,14 +17,8 @@ while true; do
 	sleep 5
 done
 
-# --compute-val-loss --snapshot  
-#retinanet-train --snapshot resnet50_csv_01.h5 --compute-val-loss --initial-epoch 1 \
-retinanet-train --batch-size 32 --epochs 50 --steps 200 \
-	--snapshot-path /mnt/left/phlai_DATA/vrdl5008/models/ \
-	--image-min-side 100 --image-max-side 220 --compute-val-loss \
-	csv tra_annotations.csv classes.csv --val-annotations val_annotations.csv > \
-	output/train.log
-
+python3 nucleus.py train --dataset=dataset --subset=train --weights=imagenet \
+	--logs /mnt/left/phlai_DATA/pykiras/logs
 exit 0
 for ((i=10; i<=30; i+=10)) do
 	retinanet-convert-model /mnt/left/phlai_DATA/vrdl5008/models/resnet50_csv_${i}.h5 \

@@ -227,8 +227,14 @@ class Config(object):
         # See compose_image_meta() for details
         self.IMAGE_META_SIZE = 1 + 3 + 3 + 4 + 1 + self.NUM_CLASSES
 
-    def display(self):
+    def display(self, export_path=None):
         """Display Configuration values."""
+        if not export_path is None:
+            fd = open(export_path, "w")
+            for a in dir(self):
+                if not a.startswith("__") and not callable(getattr(self, a)):
+                    fd.write("{:30} {}\n".format(a, getattr(self, a)))
+            fd.close()
         print("\nConfigurations:")
         for a in dir(self):
             if not a.startswith("__") and not callable(getattr(self, a)):

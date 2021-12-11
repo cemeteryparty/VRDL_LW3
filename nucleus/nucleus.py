@@ -94,8 +94,8 @@ class NucleusConfig(Config):
     # Input image resizing
     # Random crops of size 512x512
     IMAGE_RESIZE_MODE = "crop"
-    IMAGE_MIN_DIM = 512
-    IMAGE_MAX_DIM = 512
+    IMAGE_MIN_DIM = 256
+    IMAGE_MAX_DIM = 256
     IMAGE_MIN_SCALE = 2.0
 
     # Length of square anchor side in pixels
@@ -110,10 +110,10 @@ class NucleusConfig(Config):
     RPN_NMS_THRESHOLD = 0.9
 
     # How many anchors per image to use for RPN training
-    RPN_TRAIN_ANCHORS_PER_IMAGE = 64
+    RPN_TRAIN_ANCHORS_PER_IMAGE = 128
 
     # Image mean (RGB)
-    MEAN_PIXEL = np.array([43.53, 39.56, 48.22])
+    MEAN_PIXEL = np.array([167.59, 115.75, 153.79])
 
     # If enabled, resizes instance masks to a smaller size to reduce
     # memory load. Recommended when using high-resolution images.
@@ -137,7 +137,7 @@ class NucleusConfig(Config):
         super(NucleusConfig, self).__init__()
         self.STEPS_PER_EPOCH = math.ceil(
             (n_images - n_val_images) / self.IMAGES_PER_GPU
-        )
+        ) * 5
         self.VALIDATION_STEPS = max(1, math.ceil(n_val_images / self.IMAGES_PER_GPU))
 
 

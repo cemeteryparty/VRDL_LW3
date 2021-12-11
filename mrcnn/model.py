@@ -2338,9 +2338,10 @@ class MaskRCNN():
 
         # Callbacks
         callbacks = [
-            keras.callbacks.ModelCheckpoint(self.checkpoint_path,
-                verbose=0, save_weights_only=True
-            )
+            keras.callbacks.ModelCheckpoint(
+                self.checkpoint_path, monitor="val_loss", verbose=0,
+                save_best_only=True, save_weights_only=True
+            )  # save_best_only default False
         ]
 
         # Add custom callbacks to the list

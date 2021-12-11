@@ -182,7 +182,10 @@ class NucleusDataset(utils.Dataset):
 
         # Add images
         for image_id in image_ids:
-            image_path = os.path.join(dataset_dir, image_id, "images/{}.png".format(image_id))
+            if ".png" in image_id:
+                image_path = os.path.join(dataset_dir, image_id)
+            else:
+                image_path = os.path.join(dataset_dir, image_id, "images/{}.png".format(image_id))
             if not os.path.exists(image_path):
                 raise FileNotFoundError("No such file: {}".format(image_path))
             self.add_image("nucleus", image_id=image_id, path=image_path)
@@ -250,18 +253,16 @@ def train(model, dataset_dir, subset):
     # If starting from imagenet, train heads only for a bit
     # since they have random weights
     print("Train network heads")
-    model.train(dataset_train, dataset_val,
-                learning_rate=config.LEARNING_RATE,
-                epochs=20,
-                augmentation=augmentation,
-                layers="heads")
+    model.train(
+        dataset_train, dataset_val, learning_rate=config.LEARNING_RATE,
+        epochs=10, augmentation=augmentation, layers="heads"
+    )
 
     print("Train all layers")
-    model.train(dataset_train, dataset_val,
-                learning_rate=config.LEARNING_RATE,
-                epochs=40,
-                augmentation=augmentation,
-                layers="all")
+    model.train(
+        dataset_train, dataset_val, learning_rate=config.LEARNING_RATE,
+        epochs=20, augmentation=augmentation, layers="all"
+    )
 
 
 ############################################################

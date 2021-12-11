@@ -89,7 +89,7 @@ class NucleusConfig(Config):
 
     # Backbone network architecture
     # Supported values are: resnet50, resnet101
-    BACKBONE = "resnet50"
+    BACKBONE = "resnet101"
 
     # Input image resizing
     # Random crops of size 512x512
@@ -133,7 +133,7 @@ class NucleusConfig(Config):
     # Max number of final detections per image
     DETECTION_MAX_INSTANCES = 400
 
-    def __init__(self, n_images, n_val_images):
+    def __init__(self, n_images=1, n_val_images=0):
         super(NucleusConfig, self).__init__()
         self.STEPS_PER_EPOCH = math.ceil(
             (n_images - n_val_images) / self.IMAGES_PER_GPU
@@ -195,7 +195,7 @@ class NucleusDataset(utils.Dataset):
         class_ids: a 1D array of class IDs of the instance masks.
         """
         info = self.image_info[image_id]
-        print(info)
+        #print(info)
         # Get mask directory from image path
         mask_dir = os.path.join(os.path.dirname(os.path.dirname(info['path'])), "masks")
 
@@ -203,7 +203,7 @@ class NucleusDataset(utils.Dataset):
         mask = []
         for f in next(os.walk(mask_dir))[2]:
             if f.endswith(".png"):
-                m = skimage.io.imread(os.path.join(mask_dir, f)).astype(np.bool_)  # np.bool
+                m = skimage.io.imread(os.path.join(mask_dir, f)).astype(np.uint8)  # np.bool
                 mask.append(m)
         mask = np.stack(mask, axis=-1)
         # Return mask, and array of class IDs of each instance. Since we have
@@ -254,14 +254,14 @@ def train(model, dataset_dir, subset):
                 learning_rate=config.LEARNING_RATE,
                 epochs=20,
                 augmentation=augmentation,
-                layers='heads')
+                layers="heads")
 
     print("Train all layers")
     model.train(dataset_train, dataset_val,
                 learning_rate=config.LEARNING_RATE,
                 epochs=40,
                 augmentation=augmentation,
-                layers='all')
+                layers="all")
 
 
 ############################################################

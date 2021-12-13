@@ -74,7 +74,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--output-path", required=True, metavar="/path/to/dataset/",
-        help="Path to save augment results"
+        help="Path to save model results"
     )
     args = parser.parse_args()
     # print(args)

@@ -39,14 +39,6 @@ if __name__ == "__main__":
         help="Path to save augment results"
     )
     parser.add_argument(
-        "--trainset-path", required=True, metavar="/path/to/dataset/",
-        help="Path to the training dataset"
-    )
-    parser.add_argument(
-        "--train-anno-path", required=True, metavar="/path/to/ANNO_NAME.json",
-        help="Path to the training annotation file"
-    )
-    parser.add_argument(
         "--config", required=True, metavar="/path/to/CONFIG.yaml",
         help="Path to the training configuration file"
     )
@@ -57,23 +49,14 @@ if __name__ == "__main__":
     TESTSET_INFO_PATH = args.testset_info
     SAVE_PATH = args.output_path
 
-    TRAINSET_PATH = args.trainset_path
-    TRAINSET_ANNO_PATH = args.train_anno_path
     CONFIG_PATH = args.config
 
     """ Configuration """
     setup_logger()
-    register_coco_instances(
-        "trainset", {}, TRAINSET_ANNO_PATH, TRAINSET_PATH
-    )
-    # Obtain matadata for visualization
-    metadata = MetadataCatalog.get("trainset")
 
     cfg = get_cfg()
     cfg.merge_from_file(CONFIG_PATH)
-    # #cfg.OUTPUT_DIR = "weights"  # output weight directroy path
     cfg.MODEL.WEIGHTS = MODEL_PATH
-    cfg.DATASETS.TRAIN = ("trainset",)  # use training data
     cfg.DATALOADER.NUM_WORKERS = 2
     cfg.SOLVER.IMS_PER_BATCH = 2
     cfg.SOLVER.BASE_LR = 0.00025
@@ -82,7 +65,6 @@ if __name__ == "__main__":
     cfg.MODEL.ROI_HEADS.NUM_CLASSES = 1
     cfg.TEST.DETECTIONS_PER_IMAGE = 200
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.4
-    cfg.DATASETS.TEST = ("trainset")
     predictor = DefaultPredictor(cfg)
 
     """ Inference """
@@ -142,7 +124,8 @@ if __name__ == "__main__":
         im = cv2.imread(impath)
         outputs = predictor(im)
         v = Visualizer(
-            im[:, :, ::-1], metadata=metadata, scale=1,
+            im[:, :, ::-1],
+            scale=1,
             # remove the colors of unsegmented pixels
             instance_mode=ColorMode.IMAGE_BW
         )

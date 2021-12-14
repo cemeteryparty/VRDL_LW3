@@ -1,7 +1,25 @@
 # VRDL_LW3
 
 ## Introduction
-To reproduct my submission without retrainig, [Make Submission](#Inference)
+
+Something
+
+## Reproduce answer.json
+
+Download model weight from [GDrive LINK](https://ppt.cc/f25Ffx)
+
+Make sure to run below script after finishing [environment setting](#Installation).
+
+```sh
+python3 tools/gdget.py 1nEJ7NTtHcCHNQqUXaoPk55VH3Uwh4QGG -O dataset.zip
+unzip -qq dataset.zip -d ./
+python3 inference.py --model-path detectron2_nuc_model.pth \
+	--testset-path dataset/test --testset-info dataset/test_img_ids.json \
+	--output-path results --config mrcnn_R50_config.yaml
+
+# OR use provided script directly
+./answer.sh
+```
 
 ## Installation
 
@@ -67,10 +85,9 @@ python3 train.py --dataset-path aug_styCOCO --anno-path aug_styCOCO/annotation.j
 ## Inference
 
 ```sh
-python3 inference.py --model-path weightsCOCO/best_total_loss_model.pth \
+python3 inference.py --model-path best_total_loss_model.pth \
 	--testset-path dataset/test --testset-info dataset/test_img_ids.json \
-	--output-path results --trainset-path aug_styCOCO \
-	--train-anno-path aug_styCOCO/annotation.json --config mrcnn_R50_config.yaml
+	--output-path results --config mrcnn_R50_config.yaml
 ```
 
 ## Prediction Result

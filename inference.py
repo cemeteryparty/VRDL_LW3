@@ -63,7 +63,12 @@ if __name__ == "__main__":
     cfg.SOLVER.MAX_ITER = 300
     cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 128
     cfg.MODEL.ROI_HEADS.NUM_CLASSES = 1
-    cfg.TEST.DETECTIONS_PER_IMAGE = 200
+
+    cfg.TEST.AUG.ENABLED = True
+    cfg.TEST.AUG.MAX_SIZE = 1000
+    cfg.TEST.AUG.MIN_SIZES = (500, 550, 600, 650, 700, 750, 800)
+
+    cfg.TEST.DETECTIONS_PER_IMAGE = 300
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.4
     predictor = DefaultPredictor(cfg)
 

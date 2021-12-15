@@ -11,6 +11,8 @@ Download model weight from [GDrive LINK](https://ppt.cc/f25Ffx)
 Make sure to run below script after finishing [environment setting](#Installation).
 
 ```sh
+git clone https://github.com/cemeteryparty/VRDL_LW3.git
+cd VRDL_LW3/
 python3 tools/gdget.py 1nEJ7NTtHcCHNQqUXaoPk55VH3Uwh4QGG -O dataset.zip
 unzip -qq dataset.zip -d ./
 python3 inference.py --model-path detectron2_nuc_model.pth \
@@ -20,6 +22,8 @@ python3 inference.py --model-path detectron2_nuc_model.pth \
 # OR use provided script directly
 ./answer.sh
 ```
+
+The `answer.json` will be generated under `results` directory.
 
 ## Installation
 

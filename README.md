@@ -1,9 +1,5 @@
 # VRDL_LW3
 
-## Introduction
-
-Something
-
 ## Reproduce answer.json
 
 Download model weight from [GDrive LINK](https://ppt.cc/f25Ffx)
@@ -40,6 +36,14 @@ conda activate ENV_NAME
 ```
 
 ### Install Library ###
+
+Use `Makefile`
+
+```sh
+make
+```
+
+Install by shell command
 
 ```sh
 # PyTorch (Required before install detectron2)
